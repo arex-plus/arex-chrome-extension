@@ -1,19 +1,18 @@
 {
-  "name": "Arex Chrome Extension",
-  "version": "1.0.54",
+  "name": "Arex Plus Chrome Extension",
+  "version": "0.0.1",
   "manifest_version": 3,
-  "description": "Provides more capabilities for Arex",
-  "homepage_url": "https://arextest.github.io/arex-doc/",
+  "description": "Provides more capabilities for Arex Plus",
+  "homepage_url": "https://github.com/arex-plus",
   "icons": {
     "128": "logo-128.png"
   },
   "permissions": [
-    "*://*/*",
-    "http://*/*",
-    "https://*/*",
-    "http://127.0.0.1:8002/*",
-    "http://127.0.0.1:6001/*",
-    "cookies"
+    "cookies",
+    "webRequest",
+    "declarativeNetRequest",
+    "storage",
+    "tabs"
   ],
   "host_permissions": [
     "*://*/*",
@@ -27,9 +26,10 @@
     "resources": ["interceptor.js"],
     "matches": ["<all_urls>"]
   }],
-  "browser_action": {
+  "action": {
     "default_title": "Arex",
-    "default_icon": "logo-128.png"
+    "default_icon": "logo-128.png",
+    "default_popup": "popup.html"
   },
   "content_scripts": [
     {

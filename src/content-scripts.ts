@@ -22,3 +22,14 @@ window.addEventListener("message", (ev) => {
         })
     }
 })
+
+// 监听来自popup的录制状态变化消息
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'RECORDING_STATUS_CHANGED') {
+        // 通知页面录制状态已改变
+        window.postMessage({
+            type: '__AREX_RECORDING_STATUS_CHANGED__',
+            enabled: message.enabled
+        }, '*');
+    }
+});

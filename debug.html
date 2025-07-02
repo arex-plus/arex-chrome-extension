@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Arex Extension Debug Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .debug-section {
+            background: white;
+            margin: 15px 0;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .debug-section h3 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #007cba;
+            padding-bottom: 10px;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-ok { background: #4CAF50; }
+        .status-error { background: #f44336; }
+        .status-warning { background: #ff9800; }
+        button {
+            background: #007cba;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #005a87;
+        }
+        .log {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .warning-box {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .error-box {
+            background: #ffebee;
+            border-left: 4px solid #f44336;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Arex Extension Debug Tool</h1>
+    
+    <div class="debug-section">
+        <h3>📊 扩展状态检查</h3>
+        <button onclick="checkDeclarativeNetRequestRules()">检查DeclarativeNetRequest规则</button>
+        <div id="extensionStatus">检查中...</div>
+        <div id="recordingStatus">录制状态检查中...</div>
+        <div id="permissionStatus">权限检查中...</div>
+        <div id="declarativeNetRequestStatus"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h3>🔍 WebRequest 拦截测试</h3>
+        <p>这个测试会发送请求并检查是否正确添加了 <span class="code">arex-force-record</span> 头</p>
+        <button onclick="testWebRequestInterception()">测试 WebRequest 拦截</button>
+        <button onclick="testWithDifferentMethods()">测试不同请求方法</button>
+        <button onclick="clearDebugLog()">清空日志</button>
+        <div class="log" id="debugLog"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h3>🛠️ 手动测试工具</h3>
+        <p>输入您的API URL进行测试：</p>
+        <input type="text" id="testUrl" placeholder="输入测试URL，例如：https://httpbin.org/headers" style="width: 400px; padding: 8px; margin: 5px;">
+        <button onclick="testCustomUrl()">测试自定义URL</button>
+        
+        <div class="info-box">
+            <strong>使用说明：</strong>
+            <ol>
+                <li>确保扩展已安装并启用</li>
+                <li>点击扩展图标，开启录制开关</li>
+                <li>使用上面的测试工具发送请求</li>
+                <li>检查日志中的请求头信息</li>
+            </ol>
+        </div>
+    </div>
+    
+    <div class="debug-section">
+        <h3>📋 常见问题诊断</h3>
+        <div id="diagnosticResults"></div>
+        <button onclick="runDiagnostics()">运行诊断</button>
+    </div>
+    
+    <div class="debug-section">
+        <h3>📝 用户代码示例</h3>
+        <p>您提供的代码：</p>
+        <div class="code" style="display: block; padding: 15px; margin: 10px 0;">
+const response = await fetch(`${API_BASE_URL}/create`, { 
+    method: 'POST', 
+    headers: { 
+        'Content-Type': 'application/x-www-form-urlencoded' 
+    }, 
+    body: `title=${encodeURIComponent(title)}&description=${encodeURIComponent(description)}` 
+});
+        </div>
+        <button onclick="simulateUserCode()">模拟用户代码请求</button>
+    </div>
+    
+    <script>
+        let debugLog = document.getElementById('debugLog');
+        
+        // 日志函数
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'warning' ? '⚠️' : type === 'success' ? '✅' : 'ℹ️';
+            debugLog.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            debugLog.scrollTop = debugLog.scrollHeight;
+        }
+        
+        function clearDebugLog() {
+            debugLog.textContent = '';
+        }
+        
+        // 检查扩展状态
+        function checkExtensionStatus() {
+            const extensionStatusEl = document.getElementById('extensionStatus');
+            const recordingStatusEl = document.getElementById('recordingStatus');
+            const permissionStatusEl = document.getElementById('permissionStatus');
+            
+            // 检查扩展是否安装
+            if (window.__AREX_EXTENSION_INSTALLED__) {
+                extensionStatusEl.innerHTML = `
+                    <span class="status-indicator status-ok"></span>
+                    扩展已安装 (版本: ${window.__AREX_EXTENSION_VERSION__ || '未知'})
+                `;
+            } else {
+                extensionStatusEl.innerHTML = `
+                    <span class="status-indicator status-error"></span>
+                    扩展未安装或未启用
+                `;
+            }
+            
+            // 检查录制状态
+            const recordingEnabled = window.__AREX_RECORDING_ENABLED__ || false;
+            recordingStatusEl.innerHTML = `
+                <span class="status-indicator ${recordingEnabled ? 'status-ok' : 'status-warning'}"></span>
+                录制状态: ${recordingEnabled ? '已开启' : '已关闭'}
+            `;
+            
+            // 检查权限（通过尝试访问chrome API）
+            if (typeof chrome !== 'undefined' && chrome.runtime) {
+                permissionStatusEl.innerHTML = `
+                    <span class="status-indicator status-ok"></span>
+                    Chrome API 可访问
+                `;
+            } else {
+                permissionStatusEl.innerHTML = `
+                    <span class="status-indicator status-warning"></span>
+                    Chrome API 不可访问（正常，因为这是内容脚本环境）
+                `;
+            }
+        }
+        
+        // 测试WebRequest拦截
+        async function testWebRequestInterception() {
+            log('开始测试 WebRequest 拦截功能...');
+            
+            const testUrl = 'https://httpbin.org/headers';
+            
+            try {
+                log(`发送请求到: ${testUrl}`);
+                const response = await fetch(testUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Test-Source': 'debug-tool'
+                    }
+                });
+                
+                const data = await response.json();
+                log('请求成功完成', 'success');
+                
+                // 检查请求头
+                const headers = data.headers;
+                log('收到的请求头:');
+                Object.keys(headers).forEach(key => {
+                    log(`  ${key}: ${headers[key]}`);
+                });
+                
+                // 特别检查arex-force-record头
+                const arexHeader = headers['Arex-Force-Record'] || headers['arex-force-record'];
+                if (arexHeader) {
+                    log(`✅ 成功检测到录制头: ${arexHeader}`, 'success');
+                } else {
+                    log('❌ 未检测到 arex-force-record 头', 'error');
+                    log('可能的原因:', 'warning');
+                    log('  1. 录制开关未开启');
+                    log('  2. WebRequest 权限配置问题');
+                    log('  3. 扩展未正确加载');
+                }
+                
+            } catch (error) {
+                log(`请求失败: ${error.message}`, 'error');
+            }
+        }
+        
+        // 测试不同的请求方法
+        async function testWithDifferentMethods() {
+            log('测试不同的HTTP方法...');
+            
+            const methods = ['GET', 'POST', 'PUT', 'DELETE'];
+            const testUrl = 'https://httpbin.org';
+            
+            for (const method of methods) {
+                try {
+                    log(`测试 ${method} 请求...`);
+                    
+                    const options = {
+                        method: method,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Test-Method': method
+                        }
+                    };
+                    
+                    if (method !== 'GET') {
+                        options.body = JSON.stringify({ test: 'data' });
+                    }
+                    
+                    const response = await fetch(`${testUrl}/${method.toLowerCase()}`, options);
+                    const data = await response.json();
+                    
+                    const arexHeader = data.headers['Arex-Force-Record'] || data.headers['arex-force-record'];
+                    if (arexHeader) {
+                        log(`  ${method}: ✅ 检测到录制头`, 'success');
+                    } else {
+                        log(`  ${method}: ❌ 未检测到录制头`, 'error');
+                    }
+                    
+                } catch (error) {
+                    log(`  ${method}: 请求失败 - ${error.message}`, 'error');
+                }
+            }
+        }
+        
+        // 测试自定义URL
+        async function testCustomUrl() {
+            const url = document.getElementById('testUrl').value.trim();
+            if (!url) {
+                log('请输入测试URL', 'warning');
+                return;
+            }
+            
+            log(`测试自定义URL: ${url}`);
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Custom-Test': 'true'
+                    }
+                });
+                
+                log(`响应状态: ${response.status}`);
+                
+                // 尝试解析响应
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const data = await response.json();
+                    if (data.headers) {
+                        const arexHeader = data.headers['Arex-Force-Record'] || data.headers['arex-force-record'];
+                        if (arexHeader) {
+                            log('✅ 检测到录制头', 'success');
+                        } else {
+                            log('❌ 未检测到录制头', 'error');
+                        }
+                    } else {
+                        log('响应中没有headers信息，无法验证录制头', 'warning');
+                    }
+                } else {
+                    log('响应不是JSON格式，无法检查headers', 'warning');
+                }
+                
+            } catch (error) {
+                log(`请求失败: ${error.message}`, 'error');
+            }
+        }
+        
+        // 模拟用户代码
+        async function simulateUserCode() {
+            log('模拟用户提供的代码...');
+            
+            // 模拟用户的API调用
+            const API_BASE_URL = 'https://httpbin.org';
+            const title = 'Test Title';
+            const description = 'Test Description';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/post`, { 
+                    method: 'POST', 
+                    headers: { 
+                        'Content-Type': 'application/x-www-form-urlencoded' 
+                    }, 
+                    body: `title=${encodeURIComponent(title)}&description=${encodeURIComponent(description)}` 
+                });
+                
+                const data = await response.json();
+                log('用户代码模拟请求成功', 'success');
+                
+                // 检查请求头
+                const headers = data.headers;
+                const arexHeader = headers['Arex-Force-Record'] || headers['arex-force-record'];
+                
+                if (arexHeader) {
+                    log('✅ 用户代码请求成功添加了录制头', 'success');
+                } else {
+                    log('❌ 用户代码请求未添加录制头', 'error');
+                }
+                
+                log('完整的请求头信息:');
+                Object.keys(headers).forEach(key => {
+                    log(`  ${key}: ${headers[key]}`);
+                });
+                
+            } catch (error) {
+                log(`用户代码模拟失败: ${error.message}`, 'error');
+            }
+        }
+        
+        // 运行诊断
+        function runDiagnostics() {
+            const diagnosticResults = document.getElementById('diagnosticResults');
+            let results = [];
+            
+            // 检查扩展安装
+            if (!window.__AREX_EXTENSION_INSTALLED__) {
+                results.push({
+                    type: 'error',
+                    title: '扩展未安装',
+                    description: '请确保 Arex Chrome Extension 已正确安装并启用。'
+                });
+            }
+            
+            // 检查录制状态
+            if (!window.__AREX_RECORDING_ENABLED__) {
+                results.push({
+                    type: 'warning',
+                    title: '录制未开启',
+                    description: '请点击扩展图标，在弹出的对话框中开启录制开关。'
+                });
+            }
+            
+            // 检查HTTPS
+            if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+                results.push({
+                    type: 'warning',
+                    title: 'HTTP协议警告',
+                    description: '某些浏览器在HTTP页面上可能限制扩展功能，建议使用HTTPS。'
+                });
+            }
+            
+            if (results.length === 0) {
+                results.push({
+                    type: 'success',
+                    title: '诊断通过',
+                    description: '所有检查项目都正常，如果仍有问题，请查看浏览器控制台的错误信息。'
+                });
+            }
+            
+            // 显示结果
+            diagnosticResults.innerHTML = results.map(result => {
+                const boxClass = result.type === 'error' ? 'error-box' : 
+                                result.type === 'warning' ? 'warning-box' : 'info-box';
+                return `
+                    <div class="${boxClass}">
+                        <strong>${result.title}</strong><br>
+                        ${result.description}
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // 监听录制状态变化
+        window.addEventListener('message', (event) => {
+            if (event.data.type === '__AREX_RECORDING_STATUS_CHANGED__') {
+                checkExtensionStatus();
+                log(`录制状态已更新: ${event.data.enabled ? '开启' : '关闭'}`);
+            }
+        });
+        
+        // 检查DeclarativeNetRequest规则
+        async function checkDeclarativeNetRequestRules() {
+            log('检查DeclarativeNetRequest规则...');
+            const statusEl = document.getElementById('declarativeNetRequestStatus');
+            
+            try {
+                // 尝试通过消息传递获取规则信息
+                if (typeof chrome !== 'undefined' && chrome.runtime) {
+                    chrome.runtime.sendMessage({type: 'GET_DECLARATIVE_RULES'}, (response) => {
+                        if (response && response.rules) {
+                            log(`找到 ${response.rules.length} 条DeclarativeNetRequest规则`, 'success');
+                            statusEl.innerHTML = `
+                                <span class="status-indicator status-ok"></span>
+                                DeclarativeNetRequest规则: ${response.rules.length} 条
+                            `;
+                            
+                            response.rules.forEach((rule, index) => {
+                                log(`规则 ${index + 1}: ID=${rule.id}, 条件=${JSON.stringify(rule.condition)}, 动作=${JSON.stringify(rule.action)}`);
+                            });
+                        } else {
+                            log('无法获取DeclarativeNetRequest规则', 'warning');
+                            statusEl.innerHTML = `
+                                <span class="status-indicator status-warning"></span>
+                                DeclarativeNetRequest规则: 无法获取
+                            `;
+                        }
+                    });
+                } else {
+                    log('Chrome API不可用，无法检查DeclarativeNetRequest规则', 'warning');
+                    statusEl.innerHTML = `
+                        <span class="status-indicator status-warning"></span>
+                        DeclarativeNetRequest规则: Chrome API不可用
+                    `;
+                }
+            } catch (error) {
+                log(`检查DeclarativeNetRequest规则时出错: ${error.message}`, 'error');
+                statusEl.innerHTML = `
+                    <span class="status-indicator status-error"></span>
+                    DeclarativeNetRequest规则: 检查失败
+                `;
+            }
+        }
+        
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            checkExtensionStatus();
+            
+            // 设置默认测试URL
+            document.getElementById('testUrl').value = 'https://httpbin.org/headers';
+            
+            // 定期检查状态
+            setInterval(checkExtensionStatus, 3000);
+            
+            log('Debug工具已加载，请开始测试');
+        });
+    </script>
+</body>
+</html>

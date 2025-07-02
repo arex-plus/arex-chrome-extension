@@ -1,6 +1,6 @@
 {
-  "name": "arex-chrome-extension",
-  "version": "1.0.4",
+  "name": "arex-plus-chrome-extension",
+  "version": "0.0.1",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -10,14 +10,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zhangtao25/arex-chrome-extension.git"
+    "url": "git+https://github.com/arex-plus/arex-chrome-extension.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/zhangtao25/arex-chrome-extension/issues"
+    "url": "https://github.com/arex-plus/arex-chrome-extension/issues"
   },
-  "homepage": "https://github.com/zhangtao25/arex-chrome-extension#readme",
+  "homepage": "https://github.com/arex-plus/arex-chrome-extension#readme",
   "devDependencies": {
     "@types/chrome": "^0.0.193",
     "adm-zip": "^0.5.9",
