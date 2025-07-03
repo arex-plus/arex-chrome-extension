@@ -1,7 +1,7 @@
 // @ts-ignore
 window.__AREX_EXTENSION_INSTALLED__ = true
 // @ts-ignore
-window.__AREX_EXTENSION_VERSION__ = '1.0.4'
+window.__AREX_EXTENSION_VERSION__ = '0.0.1'
 // @ts-ignore
 window.__AREX_RECORDING_ENABLED__ = false
 

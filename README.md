@@ -4,7 +4,7 @@
 
 ## 安装方法
 
-前往chrome插件市场，下载安装 [Arex Chrome Extension](https://chrome.google.com/webstore/detail/arex-chrome-extension/jmmficadjneeekafmnheppeoehlgjdjj?hl=zh-CN)
+下载地址：[Release文件](https://git.kingdee.com/arex-plus/arex-chrome-extension/-/wikis/Release%E6%89%93%E5%8C%85%E6%96%87%E4%BB%B6)
 
 ## 开发
 
